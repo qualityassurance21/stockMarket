@@ -42,13 +42,23 @@ for stockCode in stockCodes:
     # soup = getSoup.getSoup(url)
     response = requests.get(url)
     response.raise_for_status()
-    res = response.text
-    JsonDatas = json.loads(res, encoding='utf-8')
+    res = response.content
+    try:
+        JsonDatas = json.loads(res, encoding='utf-8')
+    except:
+        print('数据异常,跳过')
     datas = JsonDatas['data']
     print(datas)
     for data in datas:
-        # 添加当天日期(交易日)
-        date = time.strftime("%Y-%m-%d", time.localtime())
+        # 添加当天日期(交易日), 判断采集当天是否是交易日
+        if time.strftime('%w', time.localtime()) == '0':
+            date = time.strftime("%Y%m%d", time.localtime())
+            date = int(date) - 2
+        elif time.strftime('%w', time.localtime()) == '6':
+            date = time.strftime("%Y%m%d", time.localtime())
+            date = int(date) - 1
+        else:
+            date = time.strftime("%Y%m%d", time.localtime())
         stockCode = data['stockCode']
         stockName = data['stockName']
         close = data['close']
@@ -63,7 +73,10 @@ for stockCode in stockCodes:
         if 'None' in sql:
             print('jump this data')
         else:
-            connectDB.get_fetch(conn, cur, sql)
+            try:
+                connectDB.get_fetch(conn, cur, sql)
+            except:
+                print('数据重复,跳过')
 
 print('采集数据完毕')
 
